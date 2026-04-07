@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Resmi - SMPN 19 KOTA SEMARANG</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a508b;
+            --accent: #2d82b7;
+            --success: #27ae60;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+            --text: #333;
+        }
+
+        .dark-theme {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --primary: #0d2c4f;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 0;
+            transition: 0.3s;
+            user-select: none;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .timer-box { font-family: monospace; font-size: 1.1rem; font-weight: bold; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px; }
+
+        .container {
+            max-width: 600px; 
+            margin: 10px auto;
+            padding: 10px;
+        }
+
+        .main-content {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        #question-text {
+            font-size: 1.05rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .option-item {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-item:hover { background: #f8f9fa; }
+        .option-item.selected { background: #d1e7ff; border-color: var(--accent); font-weight: 600; }
+        .true-answer { background: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .false-answer { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+
+        .nav-section {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .num-btn {
+            height: 45px;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .num-btn.active { border: 2px solid var(--primary); color: var(--primary); }
+        .num-btn.answered { background: var(--primary); color: white; border: none; }
+        .num-btn.doubt { background: var(--warning) !important; color: #000; border: none; }
+        .num-btn.correct { background: var(--success) !important; color: white; border: none; }
+        .num-btn.wrong { background: var(--danger) !important; color: white; border: none; }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        .btn:active { opacity: 0.8; }
+
+        #start-screen {
+            position: fixed; inset: 0; background: var(--primary);
+            color: white; display: flex; justify-content: center; align-items: center; z-index: 2000;
+            padding: 20px;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hidden { display: none !important; }
+
+        input, select {
+            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: none; box-sizing: border-box;
+        }
+
+        .subject-card {
+            background: white; color: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            border: 2px solid transparent; transition: 0.2s;
+        }
+        .subject-card.selected { border-color: var(--success); background: #eaffea; }
+        .subject-card.completed { opacity: 0.6; pointer-events: none; background: #eee; }
+    </style>
+</head>
+<body>
+
+<div id="start-screen">
+    <div class="glass-panel">
+        <h2 style="margin-bottom: 5px;">UJIAN TKA SIMULASI KELAS 9 SMP/MTS 🏫</h2>
+        <p style="margin-top: 0; opacity: 0.8;">BERDOA TERLEBIH DAHULU SEBELUM MENGERJAKAN❗</p>
+        
+        <div id="identity-form">
+            <input type="text" id="user-name" placeholder="Nama Lengkap">
+            <select id="user-gender">
+                <option value="">Jenis Kelamin</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+            </select>
+            <input type="number" id="user-age" placeholder="Usia">
+            <button class="btn" style="background:var(--success); color:white; width:100%" onclick="saveIdentity()">MASUK UJIAN</button>
+        </div>
+
+        <div id="subject-selection" class="hidden">
+            <p style="text-align: left; font-size: 0.9rem;">Pilih Mata Pelajaran:</p>
+            <div class="subject-card" id="card-indo" onclick="selectSubject('indo')">
+                <div style="text-align: left;">
+                    <h4 style="margin:0">B. INDONESIA</h4>
+                    <small>30 Soal | 30 Menit</small>
+                </div>
+                <div id="status-indo"></div>
+            </div>
+            <div class="subject-card" id="card-math" onclick="selectSubject('math')">
+                <div style="text-align: left;">
+                    <h4 style="margin:0">MATEMATIKA</h4>
+                    <small>30 Soal | 30 Menit</small>
+                </div>
+                <div id="status-math"></div>
+            </div>
+            <button id="btn-start" class="btn" style="background:#95a5a6; color:white; width:100%; margin-top:10px;" onclick="startQuiz()" disabled>MULAI UJIAN</button>
+        </div>
+    </div>
+</div>
+
+<header>
+    <div id="header-title" style="font-weight:bold;">CBT | SMPN 19</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <div class="timer-box" id="timer">30:00</div>
+        <button onclick="toggleTheme()" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">🌓</button>
+    </div>
+</header>
+
+<div class="container">
+    <main class="main-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <b id="q-number-label" style="color:var(--primary)">SOAL NO 1</b>
+            <button onclick="speakQuestion()" style="background:#f0f0f0; border:none; padding:6px 12px; border-radius:20px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; gap:5px;">
+                🔊 Baca Soal
+            </button>
+        </div>
+        
+        <div id="question-text"></div>
+        <div id="options-container"></div>
+
+        <div id="explanation-box" class="hidden" style="background:#f0f7ff; padding:15px; border-left:4px solid var(--accent); border-radius:4px; margin-top:20px; font-size:0.9rem;"></div>
+
+        <div class="btn-group">
+            <button class="btn" style="background:#95a5a6; color:white" onclick="changeQ(-1)">Kembali</button>
+            <button id="next-btn" class="btn" style="background:var(--accent); color:white" onclick="changeQ(1)">Lanjut</button>
+        </div>
+        
+        <button id="doubt-btn" class="btn" style="width:100%; margin-top:10px; background:var(--warning);" onclick="toggleDoubt()">RAGU-RAGU</button>
+        <button id="submit-btn" class="btn hidden" style="width:100%; margin-top:10px; background:var(--success); color:white" onclick="finishQuiz()">KUMPULKAN JAWABAN</button>
+        <button id="home-btn" class="btn hidden" style="width:100%; margin-top:10px; background:var(--primary); color:white" onclick="goToHome()">KEMBALI KE BERANDA</button>
+    </main>
+
+    <div class="nav-section">
+        <h4 style="margin:0; font-size:0.9rem;">NAVIGASI NOMOR</h4>
+        <div class="number-grid" id="number-grid"></div>
+        <div id="result-stat" class="hidden" style="margin-top:20px; border-top:2px solid #eee; padding-top:15px; text-align:center;">
+            <div id="stat-score" style="margin-bottom:15px;"></div>
+            <button class="btn" style="background:var(--primary); color:white; width:100%" onclick="downloadPDF()">UNDUH HASIL (PDF)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Data Soal Lengkap
+    const bankSoal = {
+        indo: [
+            { q: "Andi sedang mengamati reaksi antara cuka dan baking soda. Teks yang sedang disusun Andi adalah...", options: ["Teks Eksposisi", "Teks Laporan Percobaan", "Teks Deskripsi", "Teks Eksplanasi"], a: 1, exp: "Laporan percobaan didasarkan pada kegiatan eksperimen." },
+            { q: "Rina menulis: 'Tujuan dari kegiatan ini adalah untuk mengetahui kandungan vitamin C pada berbagai buah'. Bagian ini terletak pada...", options: ["Tujuan", "Alat dan Bahan", "Hasil", "Simpulan"], a: 0, exp: "Jelas menyebutkan maksud kegiatan." },
+            { q: "'Teman-teman, marilah kita kurangi penggunaan plastik mulai dari sekarang.' Kalimat tersebut merupakan ciri...", options: ["Pidato Informatif", "Pidato Persuasif", "Pidato Instruktif", "Pidato Rekreatif"], a: 1, exp: "Mengajak audiens bertindak." },
+            { q: "'Matahari mulai tenggelam di ufuk barat, memberikan warna jingga di langit desa Sukamaju.' Unsur intrinsik yang menonjol adalah...", options: ["Alur", "Latar", "Amanat", "Penokohan"], a: 1, exp: "Menjelaskan waktu dan tempat." },
+            { q: "Teks Laporan: 'Siapkan tabung reaksi, rak tabung, dan penjepit kayu.' Bagian ini disebut...", options: ["Langkah-langkah", "Tujuan", "Alat dan Bahan", "Simpulan"], a: 2, exp: "Benda yang digunakan adalah alat." },
+            { q: "Kutipan Pidato: 'Pertama-tama, marilah kita panjatkan puji syukur ke hadirat Tuhan Yang Maha Esa.' Bagian ini disebut...", options: ["Isi", "Pembukaan", "Penutup", "Harapan"], a: 1, exp: "Bagian awal pidato." },
+            { q: "'Aku terdiam melihat kado itu. Rasanya tidak percaya Ibu ingat hari ulang tahunku.' Sudut pandang yang digunakan adalah...", options: ["Orang pertama", "Orang kedua", "Orang ketiga", "Orang luar"], a: 0, exp: "Kata 'Aku' = Orang Pertama." },
+            { q: "Laporan Percobaan: 'Setelah diteteskan betadine, nasi berubah warna menjadi biru tua.' Kalimat tersebut adalah bagian...", options: ["Langkah", "Alat", "Hasil", "Tujuan"], a: 2, exp: "Menunjukkan data yang ditemukan." },
+            { q: "'Jangan pernah menyerah sebelum mencoba, Nak.' Unsur intrinsik ini disebut...", options: ["Tema", "Latar", "Amanat", "Sudut pandang"], a: 2, exp: "Mengandung pesan/nasihat." },
+            { q: "'Penggunaan gadget yang berlebihan dapat merusak saraf mata. Oleh karena itu, batasilah penggunaannya.' Kata 'Oleh karena itu' merupakan konjungsi...", options: ["Syarat", "Sebab-akibat", "Urutan", "Pertentangan"], a: 1, exp: "Hubungan logika hasil." },
+            { q: "'Larutkan garam ke dalam air, lalu aduk hingga rata.' Kalimat di atas menggunakan kata kerja...", options: ["Pasif", "Aktif", "Imperatif", "Deskriptif"], a: 2, exp: "Kata perintah (Instruksi)." },
+            { q: "'Siska sangat rajin, sedangkan adiknya sangat malas.' Cara penggambaran tokoh di atas disebut...", options: ["Analitik (Langsung)", "Dramatik", "Latar", "Dialog"], a: 0, exp: "Sifat disebutkan langsung." },
+            { q: "'Sekian pidato saya, mohon maaf jika ada salah kata.' Kalimat ini berada di...", options: ["Pembukaan", "Isi", "Penutup", "Tujuan"], a: 2, exp: "Akhir pembicaraan." },
+            { q: "'Objek yang diteliti adalah pertumbuhan kacang hijau.' Kata 'Objek' bermakna...", options: ["Sasaran penelitian", "Alat penelitian", "Waktu penelitian", "Hasil penelitian"], a: 0, exp: "Hal yang diamati." },
+            { q: "'Wajahnya bagaikan rembulan yang bersinar di malam hari.' Majas yang digunakan adalah...", options: ["Hiperbola", "Simile (Asosiasi)", "Personifikasi", "Metafora"], a: 1, exp: "Ada kata pembanding 'bagaikan'." },
+            { q: "Hadirin yang saya hormati...' Kata 'Hadirin' dalam etika berpidato disebut...", options: ["Sapaan hormat", "Salam pembuka", "Isi", "Harapan"], a: 0, exp: "Menghormati audiens." },
+            { q: "'Kesimpulannya, tanaman yang disiram air cucian beras tumbuh lebih cepat.' Bagian ini merupakan struktur...", options: ["Simpulan", "Tujuan", "Langkah", "Hasil"], a: 0, exp: "Intisari akhir laporan." },
+            { q: "'Sore itu, suasana menjadi sangat tegang ketika kedua tokoh berdebat hebat.' Bagian alur ini disebut...", options: ["Orientasi", "Komplikasi", "Resolusi", "Koda"], a: 1, exp: "Muncul konflik." },
+            { q: "'Ayo kita jaga kebersihan kelas!' Kata 'Ayo' berfungsi sebagai...", options: ["Kata tugas", "Kata ajakan", "Kata benda", "Kata sifat"], a: 1, exp: "Mengajak orang lain." },
+            { q: "Laporan Percobaan harus bersifat 'Sistematis', artinya...", options: ["Sesuai keinginan", "Berurutan sesuai aturan", "Singkat saja", "Bahasa gaul"], a: 1, exp: "Terstruktur rapi." },
+            { q: "'Rina merasa sangat sedih karena kucing kesayangannya hilang.' Kata 'Sedih' menunjukkan unsur intrinsik...", options: ["Latar suasana", "Latar waktu", "Alur", "Amanat"], a: 0, exp: "Perasaan tokoh menciptakan suasana." },
+            { q: "'Peredaran narkoba di sekolah sangat mengkhawatirkan.' Kalimat ini merupakan...", options: ["Pernyataan posisi", "Tahap argumen", "Ajakan", "Penutup"], a: 0, exp: "Poin utama yang dibahas." },
+            { q: "'Berdasarkan data di atas, terbukti bahwa es mencair lebih cepat.' Kata 'Terbukti' menunjukkan laporan bersifat...", options: ["Fiktif", "Opini", "Objektif (Fakta)", "Khayalan"], a: 2, exp: "Berdasarkan fakta lapangan." },
+            { q: "'Dahulu kala, di sebuah hutan rimba...' Kalimat ini biasanya ada di bagian...", options: ["Orientasi", "Resolusi", "Klimaks", "Penutup"], a: 0, exp: "Pembukaan cerita." },
+            { q: "'Mari kita teladani sikap para pahlawan bangsa.' Ini adalah contoh kalimat...", options: ["Persuasif", "Interogatif", "Deklaratif", "Eksklamatif"], a: 0, exp: "Kalimat ajakan." },
+            { q: "'1. Potong botol menjadi dua. 2. Masukkan kapas.' Ini adalah struktur...", options: ["Alat", "Hasil", "Langkah-langkah", "Simpulan"], a: 2, exp: "Urutan kerja." },
+            { q: "Manakah kalimat yang menggunakan majas Personifikasi?", options: ["Rumah itu besar.", "Pena itu menari-nari di atas kertas.", "Suaranya keras.", "Dia makan lahap."], a: 1, exp: "Benda mati beraksi seperti manusia." },
+            { q: "Sinonim dari kata 'Metode' adalah...", options: ["Alat", "Cara/Prosedur", "Hasil", "Tempat"], a: 1, exp: "Metode = Tata cara." },
+            { q: "'Kita harus belajar supaya lulus.' Kata 'supaya' adalah konjungsi...", options: ["Tujuan", "Sebab", "Akibat", "Pertentangan"], a: 0, exp: "Menyatakan niat/maksud." },
+            { q: "'Akhirnya, Budi meminta maaf dan mereka berteman kembali.' Struktur ini disebut...", options: ["Komplikasi", "Orientasi", "Resolusi", "Klimaks"], a: 2, exp: "Penyelesaian masalah." }
+        ],
+        math: [
+            { q: "Budi memiliki sebidang tanah berbentuk persegi dengan luas 144 m². Berapakah panjang sisi tanah tersebut?", options: ["10 m", "12 m", "14 m", "16 m"], a: 1, exp: "Sisi = √144 = 12 m." },
+            { q: "Sebuah bak mandi berbentuk kubus dengan rusuk 50 cm. Volume air maksimal yang dapat ditampung adalah...", options: ["125 Liter", "12.500 Liter", "250 Liter", "25 Liter"], a: 0, exp: "50x50x50 = 125.000 cm³ = 125 Liter." },
+            { q: "Hasil dari 2⁵ x 2³ adalah...", options: ["2¹⁵", "2⁸", "4⁸", "2²"], a: 1, exp: "Pangkat dijumlahkan: 5 + 3 = 8." },
+            { q: "Bentuk sederhana dari √75 adalah...", options: ["5√2", "3√5", "5√3", "2√5"], a: 2, exp: "√25 x √3 = 5√3." },
+            { q: "Persamaan kuadrat x² - 5x + 6 = 0 memiliki akar-akar...", options: ["x=2 atau x=3", "x=-2 atau x=-3", "x=1 atau x=6", "x=-1 atau x=-6"], a: 0, exp: "(x-2)(x-3)=0." },
+            { q: "Diskriminan dari persamaan x² + 4x + 4 = 0 adalah...", options: ["16", "8", "4", "0"], a: 3, exp: "D = b² - 4ac = 4² - 4(1)(4) = 0." },
+            { q: "Titik puncak dari fungsi f(x) = x² - 4x + 3 adalah...", options: ["(2, -1)", "(2, 1)", "(-2, 3)", "(0, 3)"], a: 0, exp: "x = -b/2a = 4/2 = 2. f(2) = 4-8+3 = -1." },
+            { q: "Sebuah kerucut memiliki jari-jari 7 cm dan tinggi 24 cm. Panjang garis pelukisnya (s) adalah...", options: ["25 cm", "30 cm", "31 cm", "20 cm"], a: 0, exp: "s = √(7² + 24²) = √625 = 25." },
+            { q: "Volume bola dengan jari-jari 10 cm (π=3,14) adalah...", options: ["3140 cm³", "4186,67 cm³", "1256 cm³", "628 cm³"], a: 1, exp: "V = 4/3 x π x r³." },
+            { q: "Sebuah koin dilempar sekali. Peluang muncul angka adalah...", options: ["1", "1/4", "1/2", "0"], a: 2, exp: "Sisi angka / total sisi = 1/2." },
+            { q: "Dua buah dadu dilempar bersamaan. Banyaknya ruang sampel adalah...", options: ["6", "12", "24", "36"], a: 3, exp: "6 x 6 = 36." },
+            { q: "Bayangan titik A(2, 3) jika ditranslasi oleh T(4, 5) adalah...", options: ["(6, 8)", "(8, 6)", "(2, 2)", "(-2, -2)"], a: 0, exp: "(2+4, 3+5) = (6, 8)." },
+            { q: "Refleksi titik (3, 4) terhadap sumbu X menghasilkan titik...", options: ["(-3, 4)", "(3, -4)", "(-3, -4)", "(4, 3)"], a: 1, exp: "(x, y) -> (x, -y)." },
+            { q: "Dilatasi titik (2, 2) dengan pusat (0,0) and faktor skala 3 adalah...", options: ["(5, 5)", "(6, 6)", "(2, 6)", "(6, 2)"], a: 1, exp: "(2*3, 2*3) = (6, 6)." },
+            { q: "Nilai dari 10⁰ adalah...", options: ["0", "1", "10", "Tak terhingga"], a: 1, exp: "Bilangan apapun (kecuali 0) pangkat 0 adalah 1." },
+            { q: "Jika 3^x = 81, maka nilai x adalah...", options: ["2", "3", "4", "5"], a: 2, exp: "3x3x3x3 = 81." },
+            { q: "Luas permukaan kubus dengan sisi 10 cm adalah...", options: ["100 cm²", "400 cm²", "600 cm²", "1000 cm²"], a: 2, exp: "6 x s² = 6 x 100 = 600." },
+            { q: "Himpunan penyelesaian x² - 9 = 0 adalah...", options: ["{3}", "{-3}", "{3, -3}", "{9, -9}"], a: 2, exp: "x² = 9 -> x = ±3." },
+            { q: "Grafik fungsi y = x² + 5 akan memotong sumbu Y di titik...", options: ["(0, 0)", "(0, 5)", "(5, 0)", "(5, 5)"], a: 1, exp: "Jika x=0, y=5." },
+            { q: "Bentuk baku dari 0,000075 adalah...", options: ["7,5 x 10⁻⁵", "7,5 x 10⁻⁴", "75 x 10⁻⁶", "0,75 x 10⁻⁴"], a: 0, exp: "Geser koma 5 kali ke kanan." },
+            { q: "Hasil dari √8 + √18 adalah...", options: ["√26", "5√2", "2√5", "6√2"], a: 1, exp: "2√2 + 3√2 = 5√2." },
+            { q: "Sebuah tabung memiliki jari-jari 10 cm and tinggi 20 cm. Luas selimutnya adalah (π=3,14)...", options: ["628 cm²", "1256 cm²", "3140 cm²", "6280 cm²"], a: 1, exp: "2 x π x r x t = 2 * 3.14 * 10 * 20 = 1256." },
+            { q: "Tinggi sebuah pohon 2 m, panjang bayangannya 3 m. Jika bayangan gedung 15 m, tinggi gedung adalah...", options: ["10 m", "12 m", "15 m", "20 m"], a: 0, exp: "2/3 = x/15 -> 3x = 30 -> x = 10." },
+            { q: "Banyak rusuk pada bangun ruang kerucut adalah...", options: ["0", "1", "2", "3"], a: 1, exp: "Kerucut memiliki 1 rusuk lengkung." },
+            { q: "Fungsi f(x) = -x² + 6x - 8 terbuka ke arah...", options: ["Atas", "Bawah", "Kanan", "Kiri"], a: 1, exp: "Karena nilai a negatif (-1)." },
+            { q: "Diberikan y = 2x² - 4x. Nilai sumbu simetri adalah...", options: ["x = 1", "x = 2", "x = -1", "x = 4"], a: 0, exp: "-b/2a = 4/(2*2) = 1." },
+            { q: "Hasil dari (2²)³ adalah...", options: ["2⁵", "2⁶", "2⁸", "2⁹"], a: 1, exp: "Pangkat dikalikan: 2 x 3 = 6." },
+            { q: "Jika akar-akar x² + bx + c = 0 adalah 2 and 5, maka nilai b adalah...", options: ["7", "-7", "10", "-10"], a: 1, exp: "x1 + x2 = -b -> 2+5 = 7 -> b = -7." },
+            { q: "Volume limas dengan luas alas 30 cm² and tinggi 10 cm adalah...", options: ["300 cm³", "150 cm³", "100 cm³", "60 cm³"], a: 2, exp: "1/3 x Luas Alas x Tinggi = 1/3 * 30 * 10 = 100." },
+            { q: "Pelambungan dua koin, peluang muncul keduanya Gambar adalah...", options: ["1/2", "1/4", "3/4", "1"], a: 1, exp: "S = {AA, AG, GA, GG}. Kejadian {GG} = 1/4." }
+        ]
+    };
+
+    let userData = { name: '', gender: '', age: '' };
+    let completedExams = { indo: false, math: false };
+    let selectedMapel = '';
+    let questions = [];
+    let currentIdx = 0;
+    let userAnswers = [];
+    let userDoubt = []; 
+    let timeLeft = 30 * 60;
+    let timerInterval;
+    let isFinished = false;
+
+    // Logika Sistem
+    function saveIdentity() {
+        const name = document.getElementById('user-name').value;
+        const gender = document.getElementById('user-gender').value;
+        const age = document.getElementById('user-age').value;
+
+        if(!name || !gender || !age) return alert("Harap lengkapi semua data diri!");
+
+        userData = { name, gender, age };
+        document.getElementById('identity-form').classList.add('hidden');
+        document.getElementById('subject-selection').classList.remove('hidden');
+    }
+
+    function selectSubject(mapel) {
+        if(completedExams[mapel]) return alert("Ujian ini sudah diselesaikan!");
+        selectedMapel = mapel;
+        document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById(`card-${mapel}`).classList.add('selected');
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-start').style.background = "#27ae60";
+    }
+
+    function startQuiz() {
+        isFinished = false;
+        currentIdx = 0;
+        timeLeft = 30 * 60;
+        questions = [...bankSoal[selectedMapel]].sort(() => Math.random() - 0.5);
+        userAnswers = new Array(questions.length).fill(null);
+        userDoubt = new Array(questions.length).fill(false);
+
+        document.getElementById('header-title').innerText = `CBT | ${selectedMapel.toUpperCase()}`;
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('result-stat').classList.add('hidden');
+        document.getElementById('home-btn').classList.add('hidden');
+        
+        initNav();
+        renderQuestion();
+        startTimer();
+    }
+
+    function initNav() {
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        questions.forEach((_, i) => {
+            const btn = document.createElement('button');
+            btn.innerText = (i + 1).toString().padStart(2, '0');
+            btn.className = 'num-btn';
+            btn.id = `nav-${i}`;
+            btn.onclick = () => { currentIdx = i; renderQuestion(); };
+            grid.appendChild(btn);
+        });
+    }
+
+    function renderQuestion() {
+        const item = questions[currentIdx];
+        document.getElementById('q-number-label').innerText = `SOAL NO ${currentIdx + 1}`;
+        document.getElementById('question-text').innerText = item.q;
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+
+        item.options.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            if (isFinished) {
+                if (idx === item.a) div.classList.add('true-answer');
+                if (userAnswers[currentIdx] === idx && idx !== item.a) div.classList.add('false-answer');
+            } else {
+                if (userAnswers[currentIdx] === idx) div.classList.add('selected');
+                div.onclick = () => selectOption(idx);
+            }
+            div.innerHTML = `<b style="width:25px">${String.fromCharCode(65 + idx)}.</b> ${opt}`;
+            container.appendChild(div);
+        });
+
+        const expBox = document.getElementById('explanation-box');
+        if (isFinished) {
+            expBox.innerHTML = `<b>PEMBAHASAN:</b><br>${item.exp}`;
+            expBox.classList.remove('hidden');
+        } else expBox.classList.add('hidden');
+
+        updateUINav();
+    }
+
+    function selectOption(idx) {
+        if (isFinished) return;
+        userAnswers[currentIdx] = idx;
+        renderQuestion();
+    }
+
+    function toggleDoubt() {
+        if (isFinished) return;
+        userDoubt[currentIdx] = !userDoubt[currentIdx];
+        renderQuestion();
+    }
+
+    function updateUINav() {
+        document.querySelectorAll('.num-btn').forEach((b, i) => {
+            b.className = 'num-btn';
+            if (i === currentIdx) b.classList.add('active');
+            if (userAnswers[i] !== null) b.classList.add('answered');
+            if (userDoubt[i]) b.classList.add('doubt');
+            if (isFinished) b.classList.add(userAnswers[i] === questions[i].a ? 'correct' : 'wrong');
+        });
+
+        document.getElementById('next-btn').classList.toggle('hidden', currentIdx === questions.length - 1 || isFinished);
+        document.getElementById('submit-btn').classList.toggle('hidden', currentIdx !== questions.length - 1 || isFinished);
+        document.getElementById('doubt-btn').classList.toggle('hidden', isFinished);
+    }
+
+    function changeQ(step) {
+        let n = currentIdx + step;
+        if (n >= 0 && n < questions.length) { currentIdx = n; renderQuestion(); }
+    }
+
+    function speakQuestion() {
+        const text = questions[currentIdx].q;
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'id-ID';
+        window.speechSynthesis.speak(msg);
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            if (--timeLeft < 0) finishQuiz();
+        }, 1000);
+    }
+
+    function finishQuiz() {
+        if (!isFinished && !confirm("Apakah Anda yakin ingin mengumpulkan jawaban?")) return;
+        clearInterval(timerInterval);
+        isFinished = true;
+        completedExams[selectedMapel] = true; 
+        
+        let correct = userAnswers.filter((ans, i) => ans === questions[i].a).length;
+        let score = Math.round((correct / questions.length) * 100);
+        
+        document.getElementById('result-stat').classList.remove('hidden');
+        document.getElementById('home-btn').classList.remove('hidden');
+        document.getElementById('stat-score').innerHTML = `
+            <h3 style="margin:0">HASIL UJIAN</h3>
+            <p>${userData.name.toUpperCase()}</p>
+            <div style="font-size:2.5rem; color:var(--success); font-weight:bold;">${score}</div>
+            <small>Benar ✅ : ${correct} | Salah ❌ : ${questions.length - correct}</small>
+        `;
+        renderQuestion();
+        window.scrollTo(0,0);
+    }
+
+    function toggleTheme() { document.body.classList.toggle('dark-theme'); }
+
+    function goToHome() {
+        if(completedExams.indo) {
+            document.getElementById('card-indo').classList.add('completed');
+            document.getElementById('status-indo').innerHTML = '✅';
+        }
+        if(completedExams.math) {
+            document.getElementById('card-math').classList.add('completed');
+            document.getElementById('status-math').innerHTML = '✅';
+        }
+        document.getElementById('start-screen').classList.remove('hidden');
+    }
+
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let correct = userAnswers.filter((ans, i) => ans === questions[i].a).length;
+        doc.setFontSize(18);
+        doc.text("HASIL CBT SMPN 19 KOTA SEMARANG", 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Nama: ${userData.name}`, 20, 40);
+        doc.text(`Mata Pelajaran: ${selectedMapel.toUpperCase()}`, 20, 50);
+        doc.text(`Skor Akhir: ${Math.round((correct/questions.length)*100)}`, 20, 60);
+        doc.save(`Hasil_${userData.name}_${selectedMapel}.pdf`);
+    }
+</script>
+</body>
+</html>
